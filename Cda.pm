@@ -3,114 +3,108 @@ use strict;
 use CGI;
 use warnings;
 use MIME::Base64;
-our $VERSION = '0.01';
-
+our $VERSION = '0.02';
 
 # Preloaded methods go here.
-sub new
- {
-my $class =shift;
-my %args = @_ ; 
-my $self= bless {
-           },ref($class)||$class;
-$self->{controlUrlOrigin}=\&__controlUrlOrigin;
-my $mess= {  8  => 'CDA requested' ,
-	     };  
-$self->{msg}=$mess;
+sub new {
+    my $class = shift;
+    my %args  = @_;
+    my $self  = bless {}, ref($class) || $class;
+    $self->{controlUrlOrigin} = \&__controlUrlOrigin;
+    my $mess = { 8 => 'CDA requested', };
+    $self->{msg} = $mess;
 
-foreach (keys %args) {
-    $self->{$_} = $args{$_};
+    foreach ( keys %args ) {
+        $self->{$_} = $args{$_};
+    }
+    $self->{controlCDA} = \&__controlCDA_MASTER;
+    $self->{controlCDA} = \&__controlCDA_SLAVE if ( $self->{type} eq 'slave' );
+    return $self;
 }
-$self->{controlCDA}=\&__controlCDA_MASTER;
-$self->{controlCDA}=\&__controlCDA_SLAVE   if ($self->{type} eq 'slave') ;
-return $self;
- }
-sub __none {  #does ...nothing .. like me eg;
+
+sub __none {    #does ...nothing .. like me eg;
 
 }
 ##------------------------------------------------------------------
-## method controlUrlOrigin 
+## method controlUrlOrigin
 ## This method looks at param cgi 'urlc'  in order to determine if
-## the request comes with  a vip url (redirection)  or for the menu     
+## the request comes with  a vip url (redirection)  or for the menu
 ##------------------------------------------------------------------
-sub  __controlCDA_MASTER { 
-    my $self = shift;
+sub __controlCDA_MASTER {
+    my $self      = shift;
     my $operation = $self->{param}->{'op'};
-    $self->{operation}= $operation;
-if( defined( $operation ) and $operation eq 'cda' )
-{
-  
-   $self->{'message'} = $self->{msg}{8} ;
-   $self->{'error'} =1 ;
-   $self->{cda} =1;
-   
+    $self->{operation} = $operation;
+    my $opx;
+    $opx = 1 if ( ( $operation eq 'c' ) or ( $operation eq 't' ) );
+    if ( defined($operation) and $opx == 1 ) {
+
+        $self->{'message'} = $self->{msg}{8};
+        $self->{'error'}   = 1;
+        $self->{cda}       = 1;
+
+    }
 }
-}
+
 sub getAllRedirection {
-my $self= shift;
-return ($self->{urlc},$self->{urldc});
+    my $self = shift;
+    return ( $self->{urlc}, $self->{urldc} );
 }
 
 sub message {
-my $self= shift;
-return ($self->{message});
-}
-sub error {
-my $self= shift;
-return ($self->{error});
-}
-
-sub  __controlCDA_SLAVE { 
     my $self = shift;
-    my $operation = $self->{param}->{'op'};
-    $self->{operation}= $operation;
-if( defined( $operation ) )
-{
-   $self->{session} = $operation;  
-   $self->{'message'} = $self->{msg}{8} ;
-   $self->{'error'} =1 ;
-   $self->{cda} =1;
-   
-}
+    return ( $self->{message} );
 }
 
-sub  __controlUrlOrigin { 
+sub error {
+    my $self = shift;
+    return ( $self->{error} );
+}
+
+sub __controlCDA_SLAVE {
+    my $self      = shift;
+    my $operation = $self->{param}->{'op'};
+    $self->{operation} = $operation;
+    if ( defined($operation) ) {
+        $self->{session}   = $operation;
+        $self->{'message'} = $self->{msg}{8};
+        $self->{'error'}   = 1;
+        $self->{cda}       = 1;
+
+    }
+}
+
+sub __controlUrlOrigin {
     my $urldc;
     my $self = shift;
     my $urlc = $self->{param}->{'url'};
-if ( defined ( $urlc) )
- {
-   $urldc = decode_base64($urlc);
-#  $urldc =~ s#:\d+/#/#;   # Suppress  port number in  URL
-   $urlc  = encode_base64($urldc,'');
-   $self->{'urlc'} =$urlc;
-   $self->{'urldc'}=$urldc;
- }
+    if ( defined($urlc) ) {
+        $urldc = decode_base64($urlc);
+
+        #  $urldc =~ s#:\d+/#/#;   # Suppress  port number in  URL
+        $urlc = encode_base64( $urldc, '' );
+        $self->{'urlc'}  = $urlc;
+        $self->{'urldc'} = $urldc;
+    }
 }
+
 sub getSession {
     my $self = shift;
-    return ($self->{session}) if $self->{session};
+    return ( $self->{session} ) if $self->{session};
     return (0);
 
 }
+
 sub process {
-    my $self =shift;
-    my %args=@_;
-  foreach (keys %args) {
-    $self->{$_} = $args{$_};
-              }
- &{$self->{controlUrlOrigin}}($self);# no error avaiable in this step
- &{$self->{controlCDA}}($self);
-   return ($self) if $self->{'error'} ;  ## it's not necessary to go next.
+    my $self = shift;
+    my %args = @_;
+    foreach ( keys %args ) {
+        $self->{$_} = $args{$_};
+    }
+    &{ $self->{controlUrlOrigin} }($self);    # no error avaiable in this step
+    &{ $self->{controlCDA} }($self);
+    return ($self) if $self->{'error'};       ## it's not necessary to go next.
 
 }
-
-
-
-
-
-
-
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 

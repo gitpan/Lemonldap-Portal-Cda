@@ -1,5 +1,6 @@
-examples/mycdaslave.pl
-examples/mycdamaster.pl
+eg/application_new.xml
+eg/mycdaslave.pl
+eg/mycdamaster.pl
 Cda.pm
 Changes
 Makefile.PL
